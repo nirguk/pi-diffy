@@ -1,6 +1,6 @@
 {
   "name": "pi-diffy",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Pretty diff of any two text files — terminal side-by-side (git-delta), inline (diff-so-fancy), or self-contained HTML. Installed as a pi package exposing the diffy CLI + a skill.",
   "keywords": [
     "pi-package",

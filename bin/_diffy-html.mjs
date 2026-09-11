@@ -6,10 +6,16 @@
  *   node _diffy-html.mjs [--out <path>] <FROM> <TO>
  *
  * Produces a self-contained HTML file with the unified diff rendered
- * by diff2html and syntax-highlighted by highlight.js.
+ * by diff2html (word-level diffing + coloring) and an inline toggle to
+ * switch between side-by-side and line-by-line views.
+ *
+ * diff2html owns ALL rendering: we do not re-scrape or post-process its
+ * output. The earlier approach (a regex that stripped <ins>/<del> and
+ * re-ran highlight.js) violated diff2html's escaping contract and caused
+ * asymmetric <ins> retention and `&amp;` double-escaping — removed.
  *
  * Dependencies (installed locally):
- *   diff2html, highlight.js  (under .pi/scripts/diffdeps/)
+ *   diff2html  (under .pi/scripts/diffdeps/)
  */
 
 import { execFileSync } from 'node:child_process';
@@ -109,16 +115,15 @@ if (!outPath) {
   outPath = join(SCRIPT_DIR, '..', 'diffout', `${fromBase}__vs__${toBase}.diff.html`);
 }
 
-// ── Load diff2html and highlight.js from local deps (CJS builds) ────────
+// ── Load diff2html from local deps (CJS build) ─────────────────────────
 // We use createRequire rooted at the deps' node_modules so package `main`
 // entries resolve normally. A bare `import 'diff2html'` here would resolve
 // against this script's location, NOT the vendored diffdeps, so 'require'
 // with an explicit base path is the robust choice.
-let depsRequire, diff2htmlHtml, diff2htmlParse, hljs;
+let depsRequire, diff2htmlHtml, diff2htmlParse;
 const loadDeps = () => {
   depsRequire = createRequire(join(DEPS_DIR, 'package.json'));
   ({ html: diff2htmlHtml, parse: diff2htmlParse } = depsRequire('diff2html'));
-  hljs = depsRequire('highlight.js');
 };
 try {
   loadDeps();
@@ -145,19 +150,15 @@ try {
   }
 }
 
-// ── Read CSS assets ───────────────────────────────────────────────────────
+// ── Read CSS asset ───────────────────────────────────────────────────────
 const diff2htmlCss = readFileSync(
   join(DEPS_DIR, 'node_modules', 'diff2html', 'bundles', 'css', 'diff2html.min.css'),
   'utf8'
 );
-const hljsThemeCss = readFileSync(
-  join(DEPS_DIR, 'node_modules', 'highlight.js', 'styles', 'github-dark.css'),
-  'utf8'
-);
 
-// Highlighting is pre-processed in Node (below) and only the resulting HTML
-// plus the highlight.js CSS theme are embedded in the output. The output HTML
-// remains self-contained with no JS runtime/library dependency.
+// diff2html owns rendering: its output and its own stylesheet are embedded
+// verbatim. The output HTML is self-contained with no JS library runtime;
+// the only script is the tiny inline view toggle.
 
 // ── Run git diff ──────────────────────────────────────────────────────────
 let diffText;
@@ -190,42 +191,15 @@ if (!diffText || diffText.trim() === '') {
 }
 
 // ── Generate diff2html HTML ───────────────────────────────────────────────
-// Generate both side-by-side and line-by-line views
+// Generate both side-by-side and line-by-line views. diff2html owns all
+// rendering — its output is embedded verbatim (no regex post-processing).
 const ssConfig = { outputFormat: 'side-by-side', colorScheme: 'dark', drawFileList: true };
 const lbConfig = { outputFormat: 'line-by-line', colorScheme: 'dark', drawFileList: true };
 
 const ssHtml = diff2htmlHtml(diffText, ssConfig);
 const lbHtml = diff2htmlHtml(diffText, lbConfig);
 
-// ── Pre-process: apply highlight.js syntax highlighting to code lines ─────
-function highlightDiffHtml(html) {
-  // Find <span class="d2h-code-line-ctn">...</span> and highlight contents
-  return html.replace(
-    /<span class="d2h-code-line-ctn">([\s\S]*?)<\/span>/g,
-    (match, innerHTML) => {
-      // Strip <del> tags for clean highlighting
-      const stripped = innerHTML.replace(/<del>/g, '').replace(/<\/del>/g, '');
-      // Decode common HTML entities
-      const decoded = stripped
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&amp;/g, '&')
-        .replace(/&#x2F;/g, '/')
-        .replace(/&quot;/g, '"')
-        .replace(/&nbsp;/g, ' ');
-      // Highlight with auto-detect
-      const result = hljs.highlightAuto(decoded);
-      return '<span class="d2h-code-line-ctn">' + result.value + '</span>';
-    }
-  );
-}
-
-const ssHighlighted = highlightDiffHtml(ssHtml);
-const lbHighlighted = highlightDiffHtml(lbHtml);
-
 // ── Build standalone HTML document ────────────────────────────────────────
-const fromSize = statSync(fromResolved).size;
-const toSize = statSync(toResolved).size;
 const fromBaseName = basename(fromResolved);
 const toBaseName = basename(toResolved);
 
@@ -237,23 +211,20 @@ const htmlDoc = `<!DOCTYPE html>
 <title>Diff: ${htmlEscape(fromBaseName)} → ${htmlEscape(toBaseName)}</title>
 <style>
 ${diff2htmlCss}
-${hljsThemeCss}
-/* Custom page styling */
+/* Custom page styling (light wrapper only — diff2html provides all diff styles) */
 body {
   margin: 0;
-  padding: 0;
+  padding: 20px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: #0d1117;
   color: #e6edf3;
 }
 .diff-header {
-  background: #161b22;
-  border-bottom: 1px solid #30363d;
-  padding: 12px 20px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   flex-wrap: wrap;
+  margin-bottom: 16px;
 }
 .diff-header h1 {
   margin: 0;
@@ -269,22 +240,15 @@ body {
   color: #58a6ff;
   font-family: monospace;
 }
-.diff-header .badge {
-  background: #21262d;
-  border: 1px solid #30363d;
-  border-radius: 4px;
-  padding: 2px 8px;
-  font-size: 12px;
-  color: #8b949e;
-}
 .toggle-btn {
   background: #21262d;
   border: 1px solid #30363d;
-  border-radius: 4px;
-  padding: 4px 12px;
+  border-radius: 6px;
+  padding: 6px 14px;
   color: #c9d1d9;
   cursor: pointer;
   font-size: 13px;
+  font-family: inherit;
   margin-left: auto;
 }
 .toggle-btn:hover {
@@ -295,9 +259,6 @@ body {
   border-color: #1f6feb;
   color: #fff;
 }
-.diff-container {
-  padding: 16px 20px;
-}
 .view-hidden {
   display: none;
 }
@@ -307,20 +268,13 @@ body {
 <div class="diff-header">
   <h1>📄 Diff View</h1>
   <div class="file-info">
-    <span>${htmlEscape(fromBaseName)}</span>
-    <span style="margin:0 4px;">→</span>
+    <span>${htmlEscape(fromBaseName)}</span> <span style="margin:0 4px;color:#8b949e">→</span>
     <span>${htmlEscape(toBaseName)}</span>
   </div>
-  <div class="file-info">
-    <span class="badge">${htmlEscape(fromBaseName)}: ${fromSize} bytes</span>
-    <span class="badge">${htmlEscape(toBaseName)}: ${toSize} bytes</span>
-  </div>
-  <button class="toggle-btn" id="toggleView" title="Toggle between side-by-side and inline view">⇔ Side-by-Side</button>
+  <button class="toggle-btn active" id="toggleView" title="Toggle between side-by-side and inline view">⇔ Side-by-Side</button>
 </div>
-<div class="diff-container">
-  <div id="sideBySideView">${ssHighlighted}</div>
-  <div id="lineByLineView" class="view-hidden">${lbHighlighted}</div>
-</div>
+<div id="sideBySideView" class="d2h-wrapper d2h-dark-color-scheme">${ssHtml}</div>
+<div id="lineByLineView" class="view-hidden d2h-wrapper d2h-dark-color-scheme">${lbHtml}</div>
 <script>
 (function() {
   const btn = document.getElementById('toggleView');
