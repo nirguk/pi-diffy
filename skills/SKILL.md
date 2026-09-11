@@ -6,7 +6,7 @@ description: Pretty diff of any two text/edit files — terminal side-by-side (d
 # diffy
 
 Render an attractive diff of two text files. The file type is incidental — it works on
-any two text files (`.qmd`, `.md`, `.py`, `.json`, configs, …).
+any two text files (`.md`, `.py`, `.json`, configs, source, …).
 
 ```bash
 diffy FROM TO                      # terminal side-by-side (default, git-delta)
@@ -28,10 +28,5 @@ diffy --help                       # full help + exit codes
   `-o`/`--out` (html only), `--heal`, `--help`.
 - **Auto-heal**: missing vendored deps (delta binary, node deps) are installed on
   first run unless `DIFFY_HEAL=0`. `diffy --heal` forces it.
-- **Where it runs**: `diffy` is a *harness-side CLI* — run it from the harness where it
-  is on PATH, and use it against files reachable from the harness. It is **not** invoked
-  via a cross-container host (`pi-run <project> diffy …` sees no such command). Feed it
-  the project's file paths as ordinary arguments; it does not need to run inside the
-  project container.
-- **It's not qmd-specific** — the `.qmd` examples are incidental; it diffs any two text
-  files.
+- **It diffs any text file** — documents, notebooks, configs, source code, JSON, … it
+  is not tied to any one file type or project.

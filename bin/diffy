@@ -1,5 +1,5 @@
 #!/bin/sh
-# diffy — pretty diff of any two text files (the .qmd/.qmd extension is incidental).
+# diffy — pretty diff of any two text files (the file extension is incidental).
 #
 # Terminal-oriented by default: side-by-side (git-delta). Switch to inline
 # (diff-so-fancy) or generate a self-contained HTML file.

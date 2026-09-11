@@ -3,8 +3,8 @@
 Pretty diff of **any two text files** via a single `diffy` command. Delivered as a
 [pi coding-agent](https://pi.dev) package (CLI on PATH + a skill so agents reach for it).
 
-Three renderers, one entry point — the file type is incidental (`.qmd`, `.md`, `.py`,
-`.json`, configs, anything textual).
+Three renderers, one entry point — the file type is incidental (`.md`, `.py`, `.json`,
+configs, anything textual).
 
 ```bash
 diffy FROM TO                       # terminal side-by-side (default, git-delta)
