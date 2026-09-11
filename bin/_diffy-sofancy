@@ -4,7 +4,8 @@
 # Pipes git diff --no-index through diff-so-fancy for cleaner hunks.
 # Exit codes: 0 identical · 1 diff · 2 usage · 3 bad input · 4 internal.
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT")" && pwd)"
 . "$SCRIPT_DIR/_diffy-heal.sh" 2>/dev/null
 
 set -u

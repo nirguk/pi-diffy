@@ -9,7 +9,8 @@
 #   DELTA_OPTS  - override delta options (replaces defaults)
 #   DELTA_PATH  - path to delta binary (default: auto-detect)
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT")" && pwd)"
 
 # Enable the shared self-heal helper.
 # shellcheck disable=SC1091
