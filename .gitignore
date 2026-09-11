@@ -1,0 +1,9 @@
+# Runtime artifacts — fetched/installed on demand (`diffy --heal` / npm install).
+# Keeps the repo code-only; binaries + installed deps are reconstructed at install.
+bin/diffbin/delta
+bin/diffdeps/node_modules/
+**/diffout/
+
+# The diffdeps package.json(+lock) ARE committed (they drive `npm install`).
+# Node
+node_modules/

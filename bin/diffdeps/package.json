@@ -1,0 +1,17 @@
+{
+  "name": "diffdeps",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "diff2html": "^3.4.56",
+    "highlight.js": "^11.12.0"
+  }
+}

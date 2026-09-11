@@ -1,0 +1,16 @@
+{
+  "name": "pi-diffy",
+  "version": "0.1.0",
+  "description": "Pretty diff of any two text files — terminal side-by-side (git-delta), inline (diff-so-fancy), or self-contained HTML. Installed as a pi package exposing the diffy CLI + a skill.",
+  "keywords": ["pi-package", "diff", "delta", "diff-so-fancy", "diff2html", "cli"],
+  "license": "MIT",
+  "bin": {
+    "diffy": "./bin/diffy"
+  },
+  "scripts": {
+    "postinstall": "bash ./bin/_diffy-heal.sh --ensure"
+  },
+  "pi": {
+    "skills": ["./skills"]
+  }
+}
